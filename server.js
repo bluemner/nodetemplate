@@ -10,15 +10,18 @@ var app = express();
 var http = require('http');
 var https = require('https');
 var io = require('socket.io')(http);
+var path = require('path');
 var fs = require('fs');
 // =================================================
 
 var HTTPS_PORT = 4443;
-var HTTP_PORT = 8080;
-var SERVER_NAME = '';
-var SERVER_MESSAGE = '';
-var SERVER_CODE = 0;
+var HTTP_PORT = 8090;
 
+var SERVER_STATUS = {
+    SERVER_NAME: '',
+    SERVER_MESSAGE: '',
+    SERVER_CODE: 0
+}
 // -------------------------------------------------
 // OPTION FOR SSL 
 // -------------------------------------------------
@@ -35,9 +38,9 @@ var options = {
 // -------------------------------------------------
 var getServerStatus = function () {
   return [{
-    websitename: SERVER_NAME,
-    code: SERVER_CODE,
-    message: SERVER_MESSAGE
+    websitename: SERVER_STATUS.SERVER_NAME,
+    code: SERVER_STATUS.SERVER_CODE,
+    message: SERVER_STATUS.SERVER_MESSAGE
   },
     {
       websitename: "abs",
@@ -92,12 +95,7 @@ app.use(function ( req, res, next )
     next();
 });
 
-// -------------------------------------------------
-// SET FAVICON LOCATION
-// -------------------------------------------------
-app.get('/favicon.ico', function (request, responce) {
-  responce.sendFile(__dirname + '/www/img/favicon.ico');
-});
+
 
 // -------------------------------------------------
 //  SET ROOT WWW LOCATION
@@ -112,25 +110,20 @@ app.get('/Status', function (request, responce) {
 });
 
 // -------------------------------------------------
-//  
+//  Gets The JSON If The Server Is Online
 // -------------------------------------------------
 app.get('/online', function (request, responce) {
-  responce.send(onlineToJSON(SERVER_NAME, SERVER_CODE,SERVER_MESSAGE));
+  responce.send(onlineToJSON(SERVER_STATUS.SERVER_NAME, SERVER_STATUS.SERVER_CODE,SERVER_STATUS.SERVER_MESSAGE));
 });
 
 // -------------------------------------------------
-//  Set The index file location
+//  
 // -------------------------------------------------
-app.get('/', function (request, responce) {
-  responce.sendFile(__dirname + '/www/index.html');
-});
-
-// -------------------------------------------------
-//   Handling wrong urls
-// -------------------------------------------------
-app.get("/*", function (req, res) {
-  res.sendFile(__dirname + '/www/index.html');
-  console.log("bad Url:" + req.url);
+fs.readdirSync('./controllers').forEach(function (file) {
+  if(file.substr(-3) == '.js') {
+      var route = require('./controllers/' + file);
+      route.controller(app, SERVER_STATUS, path);
+  }
 });
 
 // -------------------------------------------------
